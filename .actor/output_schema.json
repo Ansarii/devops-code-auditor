@@ -1,0 +1,11 @@
+{
+  "actorOutputSchemaVersion": 1,
+  "title": "DevOps & Cloud Code Auditor Output",
+  "properties": {
+    "dataset": {
+      "title": "Auditor Findings Dataset",
+      "type": "string",
+      "template": "{{links.apiDefaultDatasetUrl}}/items?view=overview"
+    }
+  }
+}

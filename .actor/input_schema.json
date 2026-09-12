@@ -1,0 +1,43 @@
+{
+  "title": "DevOps & Cloud Code Auditor Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "githubRepoUrl": {
+      "title": "GitHub Repository URL",
+      "type": "string",
+      "description": "Public GitHub repository URL to clone and audit (e.g. https://github.com/org/repo).",
+      "editor": "textfield",
+      "prefill": "https://github.com/neoninnovationlab/neon-innovation-lab-ai-devops-skills"
+    },
+    "rawTerraform": {
+      "title": "Raw Terraform / HCL Snippet",
+      "type": "string",
+      "description": "Paste Terraform (.tf) code directly to scan for AWS/GCP cost leaks without cloning a repo.",
+      "editor": "textarea"
+    },
+    "rawSql": {
+      "title": "Raw SQL Migration Snippet",
+      "type": "string",
+      "description": "Paste PostgreSQL migration DDL statements to analyze for table-locking hazards and deadlock risks.",
+      "editor": "textarea"
+    },
+    "rawCode": {
+      "title": "Raw Application Code Snippet",
+      "type": "string",
+      "description": "Paste Next.js / TypeScript / Python route handlers to inspect for OWASP Top 10 vulnerabilities.",
+      "editor": "textarea"
+    },
+    "scanTypes": {
+      "title": "Enabled Audit Suites",
+      "type": "array",
+      "description": "Select which audit engines to run against the provided repository or snippets.",
+      "editor": "select",
+      "default": ["cloud-cost", "postgres-locks", "owasp-security"],
+      "items": {
+        "type": "string",
+        "enum": ["cloud-cost", "postgres-locks", "owasp-security"]
+      }
+    }
+  }
+}
