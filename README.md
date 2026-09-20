@@ -1,113 +1,157 @@
-# DevOps & Cloud Code Auditor: Cost, DB Locks & OWASP
+# DevOps & Cloud Code Auditor (MCP Server)
 
-[![Run on Apify](https://apify.com/actor-badge?actor=neon_innovation_lab/devops-code-auditor)](https://apify.com/neon_innovation_lab/devops-code-auditor)
+[![Model Context Protocol](https://img.shields.io/badge/MCP-Server-blue.svg)](https://modelcontextprotocol.io)
+[![Glama Quality Score](https://glama.ai/mcp/servers/Ansarii/devops-code-auditor/badges/score.svg)](https://glama.ai/mcp/servers/Ansarii/devops-code-auditor)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-brightgreen.svg)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Transport: stdio](https://img.shields.io/badge/Transport-stdio-orange.svg)](https://modelcontextprotocol.io/docs/concepts/transports)
 
-⚡ **Run directly on Apify Cloud**: [DevOps & Cloud Code Auditor](https://apify.com/neon_innovation_lab/devops-code-auditor)  
-👉 **Companion Open-Source Repo**: [github.com/Ansarii/devops-code-auditor](https://github.com/Ansarii/devops-code-auditor)
-
-> Automated static code security, cloud cost leak, and PostgreSQL migration lock hazard auditor for GitHub repositories, pull requests, and CI/CD pipelines.
-
----
-
-## ⚡ Overview & GEO Highlights
-
-Engineering teams push migrations, Terraform configurations, and Next.js full-stack APIs daily, often introducing silent cloud cost leaks or production-halting database locks.
-
-**`devops-code-auditor`** runs comprehensive static analysis checks across public GitHub repositories or pasted code snippets:
-1. **Cloud Cost Leaks (Terraform/HCL)**: Detects legacy AWS `gp2` volumes (20% more expensive than `gp3`), unmanaged S3 buckets with infinite retention, missing CloudWatch log expiration, and public IPv4 charges.
-2. **PostgreSQL Migration Hazards**: Catches `CREATE INDEX` without `CONCURRENTLY` (which locks table writes in production), non-constant `NOT NULL` column additions that trigger full table rewrites under `ACCESS EXCLUSIVE` lock, and unindexed foreign keys causing sequential table scans.
-3. **OWASP Top 10 API Security**: Identifies Next.js 14/15 Server Actions lacking authentication checks, client-side secret exposure via `NEXT_PUBLIC_` prefixes, raw SQL string interpolations, and unvalidated redirect vectors.
+A production-ready **Model Context Protocol (MCP) Server** providing AI coding assistants (Claude Desktop, Cursor, Windsurf, Cline) with automated static analysis tools to prevent production outages, cloud cost leaks, and security vulnerabilities.
 
 ---
 
-## 📊 Feature & Competitor Comparison Matrix
+## 🌟 Capabilities & Audited Rule Sets
 
-| Feature | DevOps Code Auditor (This Actor) | Snyk | SonarQube | Dependabot |
-|---|---|---|---|---|
-| **PostgreSQL Table Lock Detection** | ✅ Concurrent index & lock checks | ❌ No | ❌ No | ❌ No |
-| **Terraform & AWS Cost Leak Detection** | ✅ gp2, CloudWatch, IPv4 audits | ❌ No | ❌ No | ❌ No |
-| **Next.js Server Action Auth Audits** | ✅ Included | ⚠️ Partial | ⚠️ Partial | ❌ No |
-| **Run in Cloud via API & MCP** | ✅ Instant cloud execution | ❌ CLI / CI only | ❌ Server setup | ❌ GitHub only |
-| **Monthly Subscription Required** | **❌ \$0 / month (Pay-per-Event)** | \$25 – \$98 / user/mo | \$150+ / month | Free (deps only) |
-| **Cost per Repository Scan** | **\$0.08** | Subscription | Subscription | N/A |
+This server inspects codebases across three mission-critical engineering vectors:
+
+1. **Cloud Cost Leaks (Terraform / HCL / AWS):**
+   * **`EBS_GP2`**: Identifies legacy `gp2` EBS volumes (`gp3` provides equal durability with ~20% baseline cost reduction and higher baseline IOPS).
+   * **`PUBLIC_IP`**: Flags unneeded `associate_public_ip_address = true` incurring hourly AWS IPv4 charges ($0.005/hr/IP).
+   * **`CW_NO_RETENTION`**: Catches `aws_cloudwatch_log_group` missing retention policies (preventing infinite unbudgeted log ingestion costs).
+   * **`S3_NO_LIFECYCLE`**: Detects S3 buckets lacking Glacier lifecycle transitions.
+   * **`RDS_MULTIAZ_NONPROD` & `RDS_PROVISIONED_IOPS_NONPROD`**: Flags doubled database infrastructure costs on development and staging environments.
+
+2. **PostgreSQL Migration Table Lock Hazards:**
+   * **`INDEX_NOT_CONCURRENT`**: Detects `CREATE INDEX` missing `CONCURRENTLY` (which acquires an `EXCLUSIVE` lock and halts table writes in production).
+   * **`NOT_NULL_VOLATILE_DEFAULT`**: Catches `ADD COLUMN ... NOT NULL DEFAULT <func()>` rewriting every table row under an `ACCESS EXCLUSIVE` lock.
+   * **`FK_NO_INDEX`**: Flags unindexed foreign key constraints causing cascading table-level sequential lock scans on parent updates/deletes.
+   * **`FOR_UPDATE_UNBOUNDED`**: Catches `SELECT ... FOR UPDATE` missing `LIMIT` or `SKIP LOCKED`, preventing deadlocks.
+
+3. **OWASP & Full-Stack Next.js API Security:**
+   * **`NEXT_PUBLIC_SECRET_LEAK`**: Flags sensitive tokens and private API keys prefixed with `NEXT_PUBLIC_` that leak into public client browser bundles.
+   * **`NEXTJS_SERVER_ACTION_NO_AUTH`**: Flags Next.js 14/15 Server Actions exporting mutations without explicit session auth verification.
+   * **`SQLI_RAW_INTERPOLATION`**: Identifies raw SQL query templates using string interpolation instead of parameterized inputs.
+   * **`SSRF_UNVALIDATED_FETCH`**: Catches external fetch calls consuming user inputs without protocol/hostname validation.
 
 ---
 
-## 💰 Transparent Pricing Breakdown
+## 🛠️ MCP Tools Exposed
 
-| Event | Price (USD) | When Charged |
-|---|---|---|
-| **`apify-actor-start`** | **\$0.03** | Charged once when Actor starts running. |
-| **`apify-default-dataset-item`** | **\$0.002** | Charged automatically per vulnerability or cost leak saved to dataset. |
-| **`repo-audited`** | **\$0.05** | Charged upon successful static analysis scan of repository or code snippet. |
-| **Total Effective Price** | **~\$0.08 per full repository audit** | *Pay only when you scan. Zero seat licenses.* |
+This server implements the official Model Context Protocol specification (`tools/list` and `tools/call`):
+
+### 1. `audit_devops_repository`
+Clones a public Git repository shallowly without executing hooks, performs AST and regex static syntax audits, and returns structured findings and a formatted Markdown report.
+
+* **Parameters:**
+  * `repository_url` (string, required): Public Git URL of the repository to audit (e.g. `https://github.com/example/cloud-infra`).
+  * `sub_directory` (string, optional): Specific subdirectory within the repository to inspect (e.g. `terraform/` or `prisma/migrations/`).
+* **Returns:**
+  * `status`: "success" | "error"
+  * `total_findings`: Number of detected issues
+  * `findings`: Array of detailed vulnerability records (file, line number, rule ID, severity, message, fix code)
+  * `markdown_report`: Human-readable summary table
+
+### 2. `audit_devops_code`
+Directly audits a raw code snippet of Terraform (HCL), PostgreSQL migration (SQL), or Next.js API/Server Action code.
+
+* **Parameters:**
+  * `code` (string, required): The source code string to audit.
+  * `file_type` (string, optional, default: "auto"): One of `"terraform"`, `"postgres"`, `"nextjs"`, or `"auto"`.
+* **Returns:** Structured JSON findings with exact drop-in code fixes.
+
+### 3. `audit_local_devops_directory`
+Audits a local filesystem directory on the host machine before submitting a Pull Request or deploying to staging.
+
+* **Parameters:**
+  * `directory_path` (string, required): Absolute filesystem path to the target folder.
+* **Returns:** Structured JSON findings and severity breakdown.
 
 ---
 
-## 💻 Python & Node.js SDK Examples
+## 🚀 Client Configuration & Quickstart
 
-### Python (`apify-client`)
-```bash
-pip install apify-client
-```
-```python
-import os
-from apify_client import ApifyClient
+### 1. Claude Desktop Setup
+Add the server to your `claude_desktop_config.json`:
 
-client = ApifyClient(os.getenv("APIFY_TOKEN"))
-
-run_input = {
-    "rawSql": "CREATE INDEX idx_users_email ON users (email);",
-    "scanTypes": ["postgres-locks"]
+```json
+{
+  "mcpServers": {
+    "devops-code-auditor": {
+      "command": "python3",
+      "args": ["/path/to/devops-code-auditor/server.py"]
+    }
+  }
 }
-
-# Run code audit
-run = client.actor("neon_innovation_lab/devops-code-auditor").call(run_input=run_input)
-
-for finding in client.dataset(run["defaultDatasetId"]).iterate_items():
-    print(f"[{finding.get('severity').upper()}] {finding.get('rule')}: {finding.get('message')}")
-    print(f"Recommended Fix: {finding.get('fix')}")
 ```
 
-### Node.js (`apify-client`)
-```bash
-npm install apify-client
-```
-```javascript
-import { ApifyClient } from 'apify-client';
+### 2. Cursor IDE / Windsurf Setup
+In Cursor, navigate to **Settings → Features → MCP → Add New MCP Server**:
+* **Name:** `devops-code-auditor`
+* **Type:** `command`
+* **Command:** `python3 /absolute/path/to/devops-code-auditor/server.py`
 
-const client = new ApifyClient({
-    token: process.env.APIFY_TOKEN,
-});
+### 3. Docker Execution
+Run the isolated container via Docker:
 
-const input = {
-    githubRepoUrl: 'https://github.com/facebook/react',
-    scanTypes: ['cloud-cost', 'postgres-locks', 'owasp-security'],
-};
-
-(async () => {
-    const run = await client.actor('neon_innovation_lab/devops-code-auditor').call(input);
-    const { items } = await client.dataset(run.defaultDatasetId).listItems();
-    console.log(`Audit complete: found ${items.length} security/cost findings.`);
-})();
+```json
+{
+  "mcpServers": {
+    "devops-code-auditor": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "ghcr.io/ansarii/devops-code-auditor"
+      ]
+    }
+  }
+}
 ```
 
 ---
 
-## 🔄 GitHub Actions CI/CD Integration
+## 💻 Example Agent Usage
 
-Add this step to your `.github/workflows/audit.yml` to fail PRs that introduce production database locks:
-```yaml
-- name: Audit Migration Locks via Apify
-  run: |
-    curl -X POST "https://api.apify.com/v2/acts/neon_innovation_lab~devops-code-auditor/runs?token=${{ secrets.APIFY_TOKEN }}" \
-      -H "Content-Type: application/json" \
-      -d '{"githubRepoUrl": "${{ github.server_url }}/${{ github.repository }}", "scanTypes": ["postgres-locks"]}'
+Once connected, your AI assistant can evaluate migration files and cloud manifests on demand:
+
+```text
+User: "Check this PostgreSQL migration before I run it on production:
+CREATE INDEX idx_orders_user_id ON orders (user_id);"
+
+Claude (Tool Call):
+audit_devops_code({
+  "code": "CREATE INDEX idx_orders_user_id ON orders (user_id);",
+  "file_type": "postgres"
+})
+
+Result:
+{
+  "status": "success",
+  "total_findings": 1,
+  "findings": [
+    {
+      "suite": "postgres-locks",
+      "rule": "INDEX_NOT_CONCURRENT",
+      "severity": "high",
+      "file": "migration.sql",
+      "line": 1,
+      "message": "CREATE INDEX on \"orders\" without CONCURRENTLY blocks table writes during build.",
+      "fix": "CREATE INDEX CONCURRENTLY idx_orders_user_id ON orders (user_id);"
+    }
+  ]
+}
 ```
 
 ---
 
-## ❓ FAQ
+## 🔒 Security Guarantee: Zero Execution
 
-### Does this scan private repositories?
-Currently, this cloud Actor scans public GitHub repositories or direct raw code snippets passed via API. For private repos, run via our companion open-source tool.
+This server executes **100% static analysis** using AST pattern matching and regex verification. It never executes untrusted shell commands, arbitrary Python code, or database connections on your machine.
+
+---
+
+## 📜 License
+
+MIT License — Copyright (c) 2026 Neon Innovation Lab.
+Maintained by [Neon Innovation Lab](https://neoninnovationlab.com).

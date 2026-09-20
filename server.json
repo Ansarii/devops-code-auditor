@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.neoninnovationlab/devops-code-auditor",
+  "description": "Zero-execution DevOps, Cloud Cost (AWS/Terraform), and PostgreSQL Migration Lock Auditor for Model Context Protocol.",
+  "repository": {
+    "url": "https://github.com/Ansarii/devops-code-auditor",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "docker",
+      "identifier": "ghcr.io/ansarii/devops-code-auditor",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

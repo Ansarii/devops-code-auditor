@@ -3,7 +3,7 @@
   "name": "devops-code-auditor",
   "title": "DevOps & Cloud Code Auditor: Cost, DB Locks & OWASP",
   "description": "Static analysis cloud scanner for GitHub repos, Terraform, PostgreSQL migrations, and Next.js APIs. Detects cloud cost leaks, blocking table locks, and OWASP security gaps.",
-  "version": "1.0.0",
+  "version": "1.0",
   "meta": {
     "templateId": "python-empty"
   },
